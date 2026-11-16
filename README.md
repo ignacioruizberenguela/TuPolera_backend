@@ -1,1 +1,0 @@
-# TuPolera_backend
