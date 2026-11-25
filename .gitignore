@@ -1,17 +1,44 @@
-# Compilación
+﻿# Compilacion
 target/
 *.class
 *.log
+build/
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-# Secretos y credenciales: NUNCA subir
+# Secretos y credenciales
 .env
 .env.*
 !.env.example
 
-# IDE
+# Maven Wrapper
+.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ IDEA
 .idea/
 *.iml
-.vscode/
-.settings/
-.classpath
+*.iws
+*.ipr
+
+# Eclipse y STS
+.apt_generated
+.factorypath
 .project
+.settings/
+.springBeans
+.sts4-cache
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# VS Code
+.vscode/
+
+# Otros
+HELP.md
