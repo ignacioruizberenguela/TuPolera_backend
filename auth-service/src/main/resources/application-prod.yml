@@ -1,0 +1,9 @@
+# Producción: no se cargan usuarios de prueba (solo esquema y regiones/comunas).
+# Todas las credenciales llegan por variables de entorno (DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET).
+springdoc:
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+
+logging:
+  level:
+    root: INFO

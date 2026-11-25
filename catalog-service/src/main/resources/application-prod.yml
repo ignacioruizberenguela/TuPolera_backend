@@ -1,0 +1,9 @@
+# Producción: no se cargan datos de ejemplo. Credenciales por variables de entorno
+# (CATALOG_DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET, JWT_ISSUER).
+springdoc:
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+
+logging:
+  level:
+    root: INFO

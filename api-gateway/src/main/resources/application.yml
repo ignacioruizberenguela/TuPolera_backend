@@ -1,0 +1,76 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    default: dev
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # Nunca se reenvía una clave interna recibida desde el exterior.
+          default-filters:
+            - RemoveRequestHeader=X-Internal-Key
+          routes:
+            # ---- Microservicios de negocio (el encabezado Authorization se reenvía sin cambios) ----
+            - id: auth-service
+              uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/usuarios/**,/api/v1/regiones/**
+            - id: catalog-service
+              uri: ${CATALOG_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/productos/**,/api/v1/categorias/**
+            - id: sales-service
+              uri: ${SALES_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/v1/boletas/**,/api/v1/despacho/**
+
+            # ---- Documentación OpenAPI de cada servicio (para el Swagger UI agregado) ----
+            - id: docs-auth
+              uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/docs/auth/**
+              filters:
+                - RewritePath=/docs/auth/(?<segment>.*), /$\{segment}
+            - id: docs-catalog
+              uri: ${CATALOG_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/docs/catalog/**
+              filters:
+                - RewritePath=/docs/catalog/(?<segment>.*), /$\{segment}
+            - id: docs-sales
+              uri: ${SALES_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=/docs/sales/**
+              filters:
+                - RewritePath=/docs/sales/(?<segment>.*), /$\{segment}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:}
+    issuer: ${JWT_ISSUER:tupolera-auth}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: auth-service
+        url: /docs/auth/v3/api-docs
+      - name: catalog-service
+        url: /docs/catalog/v3/api-docs
+      - name: sales-service
+        url: /docs/sales/v3/api-docs
+  # El Gateway no define endpoints propios que documentar.
+  api-docs:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

@@ -1,0 +1,48 @@
+server:
+  port: ${SERVER_PORT:8082}
+
+spring:
+  application:
+    name: catalog-service
+  profiles:
+    default: dev
+  datasource:
+    url: ${CATALOG_DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # El esquema lo crea db/schema.sql; Hibernate no modifica las tablas.
+      ddl-auto: none
+    properties:
+      hibernate:
+        # Carga las colecciones de varios productos en lotes (evita una consulta por producto).
+        default_batch_fetch_size: 50
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+      schema-locations: classpath:db/schema.sql
+  jackson:
+    default-property-inclusion: always
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:}
+    issuer: ${JWT_ISSUER:tupolera-auth}
+  internal:
+    # Clave compartida para las operaciones internas /internal/** (mínimo 32 caracteres).
+    # Si falta, esas operaciones quedan deshabilitadas (responden 401).
+    api-key: ${INTERNAL_API_KEY:}
+
+springdoc:
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

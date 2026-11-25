@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/auth_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:tupolera}
+  sql:
+    init:
+      # En desarrollo se agregan además los usuarios de prueba (después de regiones y comunas).
+      data-locations: classpath:db/data-regiones.sql,classpath:db/data-dev-usuarios.sql
+
+logging:
+  level:
+    cl.tupolera: DEBUG

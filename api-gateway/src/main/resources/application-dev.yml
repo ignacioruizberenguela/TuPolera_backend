@@ -1,0 +1,4 @@
+logging:
+  level:
+    cl.tupolera: DEBUG
+    org.springframework.cloud.gateway: INFO

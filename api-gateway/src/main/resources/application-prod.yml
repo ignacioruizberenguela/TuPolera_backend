@@ -1,0 +1,5 @@
+# En producción las direcciones de los servicios se entregan por variables de entorno
+# (AUTH_SERVICE_URL, CATALOG_SERVICE_URL, SALES_SERVICE_URL) y solo el Gateway es público.
+logging:
+  level:
+    root: INFO

@@ -1,0 +1,17 @@
+# Compilación
+target/
+*.class
+*.log
+
+# Secretos y credenciales: NUNCA subir
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project

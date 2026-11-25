@@ -1,0 +1,895 @@
+{
+  "info": {
+    "name": "Tu Polera - catalog-service: operaciones internas de inventario",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Llama DIRECTO a catalog-service (puerto 8082): /internal no pasa por el Gateway.\n\nANTES DE EJECUTAR: en las variables de la colección escribe en 'internalKey' el valor de INTERNAL_API_KEY de tu .env (no lo subas a ningún repositorio). catalog-service debe estar levantado con esa misma clave y con los datos de ejemplo (perfil dev).\n\nEjecutar en orden con el Collection Runner. Los pasos 7-18 modifican temporalmente el stock de la talla M del producto 1 en tu base de DESARROLLO y terminan dejándolo como estaba (si un paso falla a la mitad, revisa el stock con el paso 3)."
+  },
+  "item": [
+    {
+      "name": "1. Sin clave (401)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/consulta",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "consulta"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productoIds\": [\n    1\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Clave incorrecta (401)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "clave-equivocada"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/consulta",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "consulta"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productoIds\": [\n    1\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Consulta en lote (200)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/consulta",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "consulta"
+          ]
+        },
+        "description": "Guarda el stock inicial de la talla M del producto 1 para las comprobaciones siguientes.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productoIds\": [\n    1,\n    3,\n    99999\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('99999 no encontrado', () => pm.expect(j.noEncontrados).to.include(99999));",
+              "const p = j.productos.find(x => x.id === 1);",
+              "pm.test('precioFinal viene del catálogo', () => pm.expect(p.precioFinal).to.eql(Math.round(p.precio - p.precio * p.descuento / 100)));",
+              "pm.collectionVariables.set('stockM', p.variantes.find(v => v.talla === 'M').stock);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Cantidad inválida: 0 (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/descuento",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "descuento"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"referencia\": \"ref-invalida-0001\",\n  \"items\": [\n    {\n      \"productoId\": 1,\n      \"talla\": \"M\",\n      \"cantidad\": 0\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Producto inexistente (404)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/descuento",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "descuento"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"referencia\": \"ref-producto-9999\",\n  \"items\": [\n    {\n      \"productoId\": 99999,\n      \"talla\": \"M\",\n      \"cantidad\": 1\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 404', () => pm.response.to.have.status(404));",
+              "pm.test('código', () => pm.expect(pm.response.json().errores[0].codigo).to.eql('PRODUCTO_NO_ENCONTRADO'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Variante (talla) inexistente (404)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/descuento",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "descuento"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"referencia\": \"ref-talla-xxl-0001\",\n  \"items\": [\n    {\n      \"productoId\": 1,\n      \"talla\": \"XXL\",\n      \"cantidad\": 1\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 404', () => pm.response.to.have.status(404));",
+              "pm.test('código', () => pm.expect(pm.response.json().errores[0].codigo).to.eql('VARIANTE_NO_ENCONTRADA'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Descuento correcto: 2 unidades de la talla M (200)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/descuento",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "descuento"
+          ]
+        },
+        "description": "Modifica el stock de tu base de desarrollo (los pasos 14-18 lo dejan como estaba).",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"referencia\": \"{{refDescuento}}\",\n  \"items\": [\n    {\n      \"productoId\": 1,\n      \"talla\": \"M\",\n      \"cantidad\": 2\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('refDescuento', pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('no es repetida', () => pm.expect(j.repetida).to.eql(false));",
+              "pm.test('stockActual = inicial - 2', () => pm.expect(j.items[0].stockActual).to.eql(Number(pm.collectionVariables.get('stockM')) - 2));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Repetir la misma referencia: no vuelve a descontar (200, repetida=true)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/descuento",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "descuento"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"referencia\": \"{{refDescuento}}\",\n  \"items\": [\n    {\n      \"productoId\": 1,\n      \"talla\": \"M\",\n      \"cantidad\": 2\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('repetida', () => pm.expect(j.repetida).to.eql(true));",
+              "pm.test('stock sin cambios', () => pm.expect(j.items[0].stockActual).to.eql(Number(pm.collectionVariables.get('stockM')) - 2));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Misma referencia con otra cantidad (409 CONFLICTO_IDEMPOTENCIA)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/descuento",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "descuento"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"referencia\": \"{{refDescuento}}\",\n  \"items\": [\n    {\n      \"productoId\": 1,\n      \"talla\": \"M\",\n      \"cantidad\": 5\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 409', () => pm.response.to.have.status(409));",
+              "pm.test('código', () => pm.expect(pm.response.json().errores[0].codigo).to.eql('CONFLICTO_IDEMPOTENCIA'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Descuento atómico fallido: M ok + S excede el stock (409, no descuenta nada)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/descuento",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "descuento"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"referencia\": \"{{refAtomico}}\",\n  \"items\": [\n    {\n      \"productoId\": 1,\n      \"talla\": \"M\",\n      \"cantidad\": 1\n    },\n    {\n      \"productoId\": 1,\n      \"talla\": \"S\",\n      \"cantidad\": 99999\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('refAtomico', pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 409', () => pm.response.to.have.status(409));",
+              "pm.test('STOCK_INSUFICIENTE', () => pm.expect(pm.response.json().errores.map(e => e.codigo)).to.include('STOCK_INSUFICIENTE'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Comprobar: la talla M no cambió por el intento fallido",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/consulta",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "consulta"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productoIds\": [\n    1\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 200', () => pm.response.to.have.status(200));",
+              "const m = pm.response.json().productos[0].variantes.find(v => v.talla === 'M');",
+              "pm.test('M = inicial - 2', () => pm.expect(m.stock).to.eql(Number(pm.collectionVariables.get('stockM')) - 2));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Reversión: devuelve exactamente lo descontado (200)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/descuento/{{refDescuento}}/reversion",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "descuento",
+            "{{refDescuento}}",
+            "reversion"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('no es repetida', () => pm.expect(j.repetida).to.eql(false));",
+              "pm.test('devuelve 2', () => pm.expect(j.items[0].cantidad).to.eql(2));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Reversión repetida: no vuelve a sumar (200, repetida=true)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/descuento/{{refDescuento}}/reversion",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "descuento",
+            "{{refDescuento}}",
+            "reversion"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 200', () => pm.response.to.have.status(200));",
+              "pm.test('repetida', () => pm.expect(pm.response.json().repetida).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. Comprobar: la talla M volvió al valor inicial",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/consulta",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "consulta"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productoIds\": [\n    1\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 200', () => pm.response.to.have.status(200));",
+              "const m = pm.response.json().productos[0].variantes.find(v => v.talla === 'M');",
+              "pm.test('M = inicial', () => pm.expect(m.stock).to.eql(Number(pm.collectionVariables.get('stockM'))));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. Reposición de 3 unidades (200)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/reposicion",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "reposicion"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{refReposicion}}\",\n  \"items\": [\n    {\n      \"productoId\": 1,\n      \"talla\": \"M\",\n      \"cantidad\": 3\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('refReposicion', pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('tipo', () => pm.expect(j.tipo).to.eql('REPOSICION'));",
+              "pm.test('stock = inicial + 3', () => pm.expect(j.items[0].stockActual).to.eql(Number(pm.collectionVariables.get('stockM')) + 3));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Repetir la reposición: no vuelve a sumar (200, repetida=true)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/reposicion",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "reposicion"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{refReposicion}}\",\n  \"items\": [\n    {\n      \"productoId\": 1,\n      \"talla\": \"M\",\n      \"cantidad\": 3\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "pm.test('repetida', () => pm.expect(j.repetida).to.eql(true));",
+              "pm.test('stock igual', () => pm.expect(j.items[0].stockActual).to.eql(Number(pm.collectionVariables.get('stockM')) + 3));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. Misma clave con otra cantidad (409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/reposicion",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "reposicion"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claveIdempotencia\": \"{{refReposicion}}\",\n  \"items\": [\n    {\n      \"productoId\": 1,\n      \"talla\": \"M\",\n      \"cantidad\": 50\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 409', () => pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18. Restaurar el stock: descontar las 3 unidades repuestas (200)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/descuento",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "descuento"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"referencia\": \"{{refRestaurar}}\",\n  \"items\": [\n    {\n      \"productoId\": 1,\n      \"talla\": \"M\",\n      \"cantidad\": 3\n    }\n  ]\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('refRestaurar', pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 200', () => pm.response.to.have.status(200));",
+              "pm.test('stock = inicial', () => pm.expect(pm.response.json().items[0].stockActual).to.eql(Number(pm.collectionVariables.get('stockM'))));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19. Reversión de una referencia desconocida (404)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Internal-Key",
+            "value": "{{internalKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/internal/inventario/descuento/referencia-desconocida-123/reversion",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "internal",
+            "inventario",
+            "descuento",
+            "referencia-desconocida-123",
+            "reversion"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Código 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8082"
+    },
+    {
+      "key": "internalKey",
+      "value": ""
+    },
+    {
+      "key": "stockM",
+      "value": ""
+    },
+    {
+      "key": "refDescuento",
+      "value": ""
+    },
+    {
+      "key": "refAtomico",
+      "value": ""
+    },
+    {
+      "key": "refReposicion",
+      "value": ""
+    },
+    {
+      "key": "refRestaurar",
+      "value": ""
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: ${CATALOG_DB_URL:jdbc:mysql://localhost:3306/catalog_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:tupolera}
+  sql:
+    init:
+      # En desarrollo se cargan además las categorías y productos de ejemplo del frontend.
+      data-locations: classpath:db/data-dev-catalogo.sql
+
+logging:
+  level:
+    cl.tupolera: DEBUG
