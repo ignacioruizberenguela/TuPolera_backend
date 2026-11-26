@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: ${SALES_DB_URL:jdbc:mysql://localhost:3306/sales_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${DB_USERNAME:tupolera}
+
+logging:
+  level:
+    cl.tupolera: DEBUG

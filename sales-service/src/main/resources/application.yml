@@ -1,0 +1,52 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  application:
+    name: sales-service
+  profiles:
+    default: dev
+  datasource:
+    url: ${SALES_DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # El esquema lo crea schema.sql; Hibernate no modifica las tablas.
+      ddl-auto: none
+    properties:
+      hibernate:
+        # Las fechas se guardan en UTC; se convierten a America/Santiago solo al presentar reportes.
+        jdbc:
+          time_zone: UTC
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+      schema-locations: classpath:schema.sql
+  jackson:
+    default-property-inclusion: always
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:}
+    issuer: ${JWT_ISSUER:tupolera-auth}
+  # Llamadas a otros servicios (directo a su puerto, nunca por el Gateway).
+  clientes:
+    catalogo-url: ${CATALOG_SERVICE_URL:http://localhost:8082}
+    auth-url: ${AUTH_SERVICE_URL:http://localhost:8081}
+    internal-api-key: ${INTERNAL_API_KEY:}
+    timeout-conexion: 2s
+    timeout-lectura: 5s
+
+springdoc:
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

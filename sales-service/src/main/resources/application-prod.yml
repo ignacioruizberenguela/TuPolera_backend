@@ -1,0 +1,8 @@
+# Producción: credenciales por variables de entorno (SALES_DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET, JWT_ISSUER).
+springdoc:
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+
+logging:
+  level:
+    root: INFO
